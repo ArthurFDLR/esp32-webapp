@@ -23,9 +23,16 @@
 #include "driver/sdmmc_host.h"
 #endif
 
+#include <driver/gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#define BLINK_GPIO 21
+#define BLINK_PERIOD 500
 #define MDNS_INSTANCE "esp home web server"
 
 static const char *TAG = "example";
+static const char *BLINK_TAG = "blinker";
 
 esp_err_t start_rest_server(const char *base_path);
 
@@ -123,6 +130,42 @@ esp_err_t init_fs(void)
 }
 #endif
 
+void led_blinker(void *pvParams) {
+    ESP_LOGI(BLINK_TAG, "Blinking GPIO %d every %dms (portTICK_PERIOD_MS=%d)", BLINK_GPIO, BLINK_PERIOD, portTICK_PERIOD_MS);
+    gpio_reset_pin(BLINK_GPIO);
+    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    
+    uint8_t s_led_state = 0;
+    while (true) {
+        s_led_state = !s_led_state;
+        // ESP_LOGI(BLINK_TAG, "Turning LED %s", s_led_state == true ? "ON" : "OFF");
+        gpio_set_level(BLINK_GPIO,s_led_state);
+        vTaskDelay(BLINK_PERIOD / portTICK_PERIOD_MS);
+    }
+}
+
+// Function that creates a task.
+void start_led_blinker( void )
+{
+    static uint8_t ucParameterToPass;
+    TaskHandle_t xHandle = NULL;
+
+    // Create the task, storing the handle.  Note that the passed parameter ucParameterToPass
+    // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
+    // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
+    // the new task attempts to access it.
+    ESP_LOGI(BLINK_TAG, "Create LED_BLINKER task");
+    xTaskCreate( led_blinker, "LED_BLINKER", 4096, &ucParameterToPass, tskIDLE_PRIORITY, &xHandle );
+    configASSERT( xHandle );
+
+    // Use the handle to delete the task.
+    // if( xHandle != NULL )
+    // {
+    //     ESP_LOGI(BLINK_TAG, "Delete LED_BLINKER task");
+    //     vTaskDelete( xHandle );
+    // }
+}
+
 void app_main(void)
 {
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -135,4 +178,6 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
     ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(start_rest_server(CONFIG_EXAMPLE_WEB_MOUNT_POINT));
+
+    start_led_blinker();
 }
