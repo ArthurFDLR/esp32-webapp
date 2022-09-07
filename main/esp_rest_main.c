@@ -18,6 +18,7 @@
 #include "esp_log.h"
 #include "mdns.h"
 #include "lwip/apps/netbiosns.h"
+#include "stdatomic.h"
 #include "protocol_examples_common.h"
 #if CONFIG_EXAMPLE_WEB_DEPLOY_SD
 #include "driver/sdmmc_host.h"
@@ -130,6 +131,9 @@ esp_err_t init_fs(void)
 }
 #endif
 
+extern atomic_int blinker_duration_ms_atomic; // From rest_server.c
+extern atomic_bool blinker_state_atomic; // From rest_server.c
+
 void led_blinker(void *pvParams) {
     ESP_LOGI(BLINK_TAG, "Blinking GPIO %d every %dms (portTICK_PERIOD_MS=%d)", BLINK_GPIO, BLINK_PERIOD, portTICK_PERIOD_MS);
     gpio_reset_pin(BLINK_GPIO);
@@ -137,10 +141,15 @@ void led_blinker(void *pvParams) {
     
     uint8_t s_led_state = 0;
     while (true) {
-        s_led_state = !s_led_state;
-        // ESP_LOGI(BLINK_TAG, "Turning LED %s", s_led_state == true ? "ON" : "OFF");
+        if (blinker_state_atomic)
+        {
+            s_led_state = !s_led_state;
+        } else
+        {
+            s_led_state = 0;
+        }
         gpio_set_level(BLINK_GPIO,s_led_state);
-        vTaskDelay(BLINK_PERIOD / portTICK_PERIOD_MS);
+        vTaskDelay((blinker_duration_ms_atomic / 2) / portTICK_PERIOD_MS);
     }
 }
 

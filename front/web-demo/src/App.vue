@@ -20,7 +20,7 @@
         </v-list-item> -->
         <v-list-item to="/blinker">
           <v-list-item-action>
-            <v-icon>mdi-led-on</v-icon>
+            <v-icon>{{ mdiLedOnPath }}</v-icon>
           </v-list-item-action>
           <v-list-item-content>
             <v-list-item-title>Blinker</v-list-item-title>
@@ -50,12 +50,15 @@
 </style>
 
 <script>
-export default {
-  name: "App",
-  data() {
-    return {
-      drawer: null
-    };
-  }
-};
+  import { mdiLedOn  } from '@mdi/js'
+
+  export default {
+    name: "App",
+    data() {
+      return {
+        drawer: null,
+        mdiLedOnPath: mdiLedOn
+      };
+    }
+  };
 </script>

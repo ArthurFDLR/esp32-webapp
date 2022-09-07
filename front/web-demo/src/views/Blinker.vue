@@ -12,7 +12,7 @@
             </v-toolbar-title>
             <v-spacer></v-spacer>
             <v-btn icon>
-              <v-icon>mdi-share-variant</v-icon>
+              <v-icon> {{mdiShareVariantPath}} </v-icon>
             </v-btn>
           </v-toolbar>
 
@@ -29,7 +29,7 @@
                 <span class="subheading font-weight-light mr-1">BPM</span>
                 <v-fade-transition>
                   <v-avatar
-                    v-if="isPlaying"
+                    v-if="isOn"
                     color="red"
                     :style="{
                       animationDuration: animationDuration
@@ -48,7 +48,7 @@
                   @click="toggle"
                 >
                   <v-icon large>
-                    {{ isPlaying ? 'mdi-pause' : 'mdi-play' }}
+                    {{ isOn ? mdiPausePath : mdiPlayPath }}
                   </v-icon>
                 </v-btn>
               </v-col>
@@ -59,15 +59,16 @@
               color="#005db5"
               track-color="grey"
               always-dirty
-              min="30"
-              max="300"
+              min="10"
+              max="600"
+              v-on:mouseup="post_bpm"
             >
               <template v-slot:prepend>
                 <v-icon
                   color="#005db5"
                   @click="decrement"
                 >
-                  mdi-minus
+                {{mdiMinusPath}}
                 </v-icon>
               </template>
 
@@ -76,7 +77,7 @@
                   color="#005db5"
                   @click="increment"
                 >
-                  mdi-plus
+                  {{mdiPlusPath}}
                 </v-icon>
               </template>
             </v-slider>
@@ -88,31 +89,36 @@
 </template>
 
 <script>
+  import { mdiPlus, mdiMinus, mdiShareVariant, mdiPause, mdiPlay } from '@mdi/js'
+
   export default {
     data: () => ({
       bpm: 120,
       interval: null,
-      isPlaying: false,
+      isOn: false,
+      mdiPlusPath: mdiPlus,
+      mdiMinusPath: mdiMinus,
+      mdiShareVariantPath: mdiShareVariant,
+      mdiPausePath: mdiPause,
+      mdiPlayPath: mdiPlay,
     }),
 
     computed: {
       animationDuration () {
-        return `${60 / this.bpm}s`
+        return `${30 / this.bpm}s`
       },
     },
 
+    mounted:function(){
+        this.post_bpm()
+        this.post_toggle()
+    },
+
     methods: {
-      decrement () {
-        this.bpm--
-      },
-      increment () {
-        this.bpm++
-      },
-      toggle () {
-        this.isPlaying = !this.isPlaying;
+      post_bpm () {
         this.$ajax
           .post("/api/v1/light/duration", {
-            duration_ms: 60 / this.bpm,
+            duration_ms: Math.round(60000 / this.bpm),
           })
           .then(data => {
             console.log(data);
@@ -120,6 +126,30 @@
           .catch(error => {
             console.log(error);
           });
+      },
+      post_toggle () {
+        this.$ajax
+          .post("/api/v1/light/state", {
+            state: this.isOn,
+          })
+          .then(data => {
+            console.log(data);
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      },
+      decrement () {
+        this.bpm--
+        this.post_bpm()
+      },
+      increment () {
+        this.bpm++
+        this.post_bpm()
+      },
+      toggle () {
+        this.isOn = !this.isOn;
+        this.post_toggle()
       },
     },
   }

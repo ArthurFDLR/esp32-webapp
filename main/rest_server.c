@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "esp_vfs.h"
 #include "cJSON.h"
+#include "stdatomic.h"
 
 static const char *REST_TAG = "esp-rest";
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
@@ -138,6 +139,8 @@ static esp_err_t light_brightness_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+atomic_int blinker_duration_ms_atomic = 500;
+
 /* Simple handler for blinker duration control */
 static esp_err_t light_duration_post_handler(httpd_req_t *req)
 {
@@ -162,8 +165,43 @@ static esp_err_t light_duration_post_handler(httpd_req_t *req)
     buf[total_len] = '\0';
 
     cJSON *root = cJSON_Parse(buf);
-    int duration_ms = cJSON_GetObjectItem(root, "duration_ms")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: duration_ms = %d", duration_ms);
+    blinker_duration_ms_atomic = cJSON_GetObjectItem(root, "duration_ms")->valueint;
+    ESP_LOGI(REST_TAG, "Light control: duration_ms = %d", blinker_duration_ms_atomic);
+    // atomic_store(&blinker_duration_ms_atomic, duration_ms);
+    cJSON_Delete(root);
+    httpd_resp_sendstr(req, "Post control value successfully");
+    return ESP_OK;
+}
+
+atomic_bool blinker_state_atomic = false;
+
+/* Simple handler for blinker duration control */
+static esp_err_t light_state_post_handler(httpd_req_t *req)
+{
+    int total_len = req->content_len;
+    int cur_len = 0;
+    char *buf = ((rest_server_context_t *)(req->user_ctx))->scratch;
+    int received = 0;
+    if (total_len >= SCRATCH_BUFSIZE) {
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    while (cur_len < total_len) {
+        received = httpd_req_recv(req, buf + cur_len, total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[total_len] = '\0';
+
+    cJSON *root = cJSON_Parse(buf);
+    blinker_state_atomic = cJSON_IsTrue(cJSON_GetObjectItem(root, "state"));
+    ESP_LOGI(REST_TAG, "Light control: state = %d", blinker_state_atomic);
+    // atomic_store(&blinker_duration_ms_atomic, duration_ms);
     cJSON_Delete(root);
     httpd_resp_sendstr(req, "Post control value successfully");
     return ESP_OK;
@@ -247,6 +285,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &light_duration_post_uri);
+
+    /* URI handler for light blinking state control */
+    httpd_uri_t light_state_post_uri = {
+        .uri = "/api/v1/light/state",
+        .method = HTTP_POST,
+        .handler = light_state_post_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &light_state_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
