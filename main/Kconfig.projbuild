@@ -1,8 +1,16 @@
 menu "Example Configuration"
 
+    config BLINK_GPIO
+        int "Blink GPIO number"
+        range 0 48
+        default 21
+        help
+            GPIO number (IOxx) to blink on and off.
+            Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
+
     config EXAMPLE_MDNS_HOST_NAME
         string "mDNS Host Name"
-        default "esp-home"
+        default "esp-blinker"
         help
             Specify the domain name used in the mDNS service.
             Note that webpage also take it as a part of URL where it will send GET/POST requests to.

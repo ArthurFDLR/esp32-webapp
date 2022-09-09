@@ -5,7 +5,7 @@ EXTRA_COMPONENT_DIRS = $(IDF_PATH)/examples/common_components/protocol_examples_
 include $(IDF_PATH)/make/project.mk
 
 ifdef CONFIG_EXAMPLE_WEB_DEPLOY_SF
-	WEB_SRC_DIR = $(shell pwd)/front/web-demo
+	WEB_SRC_DIR = $(shell pwd)/front/web-blinker
 	ifneq ($(wildcard $(WEB_SRC_DIR)/dist/.*),)
 		SPIFFS_IMAGE_FLASH_IN_PROJECT := 1
 		$(eval $(call spiffs_create_partition_image,www,$(WEB_SRC_DIR)/dist))

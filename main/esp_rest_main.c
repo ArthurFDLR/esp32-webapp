@@ -28,8 +28,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#define BLINK_GPIO 21
-#define BLINK_PERIOD 500
 #define MDNS_INSTANCE "esp home web server"
 
 static const char *TAG = "example";
@@ -50,6 +48,7 @@ static void initialise_mdns(void)
 
     ESP_ERROR_CHECK(mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
                                      sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
+    ESP_LOGE(TAG, "MDNS Hostname set to %s", CONFIG_EXAMPLE_MDNS_HOST_NAME);
 }
 
 #if CONFIG_EXAMPLE_WEB_DEPLOY_SEMIHOST
@@ -131,13 +130,13 @@ esp_err_t init_fs(void)
 }
 #endif
 
-extern atomic_int blinker_duration_ms_atomic; // From rest_server.c
-extern atomic_bool blinker_state_atomic; // From rest_server.c
+// From rest_server.c
+extern atomic_int blinker_duration_ms_atomic;
+extern atomic_bool blinker_state_atomic;
 
 void led_blinker(void *pvParams) {
-    ESP_LOGI(BLINK_TAG, "Blinking GPIO %d every %dms (portTICK_PERIOD_MS=%d)", BLINK_GPIO, BLINK_PERIOD, portTICK_PERIOD_MS);
-    gpio_reset_pin(BLINK_GPIO);
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    gpio_reset_pin(CONFIG_BLINK_GPIO);
+    gpio_set_direction(CONFIG_BLINK_GPIO, GPIO_MODE_OUTPUT);
     
     uint8_t s_led_state = 0;
     while (true) {
@@ -148,12 +147,11 @@ void led_blinker(void *pvParams) {
         {
             s_led_state = 0;
         }
-        gpio_set_level(BLINK_GPIO,s_led_state);
+        gpio_set_level(CONFIG_BLINK_GPIO,s_led_state);
         vTaskDelay((blinker_duration_ms_atomic / 2) / portTICK_PERIOD_MS);
     }
 }
 
-// Function that creates a task.
 void start_led_blinker( void )
 {
     static uint8_t ucParameterToPass;
@@ -163,7 +161,7 @@ void start_led_blinker( void )
     // must exist for the lifetime of the task, so in this case is declared static.  If it was just an
     // an automatic stack variable it might no longer exist, or at least have been corrupted, by the time
     // the new task attempts to access it.
-    ESP_LOGI(BLINK_TAG, "Create LED_BLINKER task");
+    ESP_LOGI(BLINK_TAG, "Create LED_BLINKER task on GPIO %d", CONFIG_BLINK_GPIO);
     xTaskCreate( led_blinker, "LED_BLINKER", 4096, &ucParameterToPass, tskIDLE_PRIORITY, &xHandle );
     configASSERT( xHandle );
 

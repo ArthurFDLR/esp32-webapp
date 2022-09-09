@@ -10,10 +10,6 @@
             <v-toolbar-title>
               <span class="subheading">Blinker speed</span>
             </v-toolbar-title>
-            <v-spacer></v-spacer>
-            <v-btn icon>
-              <v-icon> {{mdiShareVariantPath}} </v-icon>
-            </v-btn>
           </v-toolbar>
 
           <v-card-text>
@@ -48,7 +44,7 @@
                   @click="toggle"
                 >
                   <v-icon large>
-                    {{ isOn ? mdiPausePath : mdiPlayPath }}
+                    {{ isOn ? "pause" : "play_arrow" }}
                   </v-icon>
                 </v-btn>
               </v-col>
@@ -61,14 +57,14 @@
               always-dirty
               min="10"
               max="600"
-              v-on:mouseup="post_bpm"
+              v-on:mouseup="post_duration"
             >
               <template v-slot:prepend>
                 <v-icon
                   color="#005db5"
                   @click="decrement"
                 >
-                {{mdiMinusPath}}
+                remove
                 </v-icon>
               </template>
 
@@ -76,9 +72,7 @@
                 <v-icon
                   color="#005db5"
                   @click="increment"
-                >
-                  {{mdiPlusPath}}
-                </v-icon>
+                > add </v-icon>
               </template>
             </v-slider>
           </v-card-text>
@@ -89,70 +83,63 @@
 </template>
 
 <script>
-  import { mdiPlus, mdiMinus, mdiShareVariant, mdiPause, mdiPlay } from '@mdi/js'
+export default {
+  data: () => ({
+    bpm: 120,
+    interval: null,
+    isOn: false
+  }),
 
-  export default {
-    data: () => ({
-      bpm: 120,
-      interval: null,
-      isOn: false,
-      mdiPlusPath: mdiPlus,
-      mdiMinusPath: mdiMinus,
-      mdiShareVariantPath: mdiShareVariant,
-      mdiPausePath: mdiPause,
-      mdiPlayPath: mdiPlay,
-    }),
+  computed: {
+    animationDuration () {
+      return `${30 / this.bpm}s`
+    }
+  },
 
-    computed: {
-      animationDuration () {
-        return `${30 / this.bpm}s`
-      },
+  mounted: function () {
+    this.post_duration()
+    this.post_state()
+  },
+
+  methods: {
+    post_duration () {
+      this.$ajax
+        .post('/api/v1/blinker/duration', {
+          duration_ms: Math.round(60000 / this.bpm)
+        })
+        .then(data => {
+          console.log(data)
+        })
+        .catch(error => {
+          console.log(error)
+        })
     },
-
-    mounted:function(){
-        this.post_bpm()
-        this.post_toggle()
+    post_state () {
+      this.$ajax
+        .post('/api/v1/blinker/state', {
+          state: this.isOn
+        })
+        .then(data => {
+          console.log(data)
+        })
+        .catch(error => {
+          console.log(error)
+        })
     },
-
-    methods: {
-      post_bpm () {
-        this.$ajax
-          .post("/api/v1/light/duration", {
-            duration_ms: Math.round(60000 / this.bpm),
-          })
-          .then(data => {
-            console.log(data);
-          })
-          .catch(error => {
-            console.log(error);
-          });
-      },
-      post_toggle () {
-        this.$ajax
-          .post("/api/v1/light/state", {
-            state: this.isOn,
-          })
-          .then(data => {
-            console.log(data);
-          })
-          .catch(error => {
-            console.log(error);
-          });
-      },
-      decrement () {
-        this.bpm--
-        this.post_bpm()
-      },
-      increment () {
-        this.bpm++
-        this.post_bpm()
-      },
-      toggle () {
-        this.isOn = !this.isOn;
-        this.post_toggle()
-      },
+    decrement () {
+      this.bpm--
+      this.post_duration()
     },
+    increment () {
+      this.bpm++
+      this.post_duration()
+    },
+    toggle () {
+      this.isOn = !this.isOn
+      this.post_state()
+    }
   }
+}
 </script>
 
 <style>
