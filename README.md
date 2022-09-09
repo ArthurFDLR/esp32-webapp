@@ -1,3 +1,6 @@
+
+<p align="center"><img src="./.github/front_blinker.png" alt="Blinker tab of the front-end application" width="85%"></p>
+
 # HTTP Restful API Server Example
 
 (See the README.md file in the upper level 'examples' directory for more information about examples.)
