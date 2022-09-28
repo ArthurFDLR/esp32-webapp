@@ -1,9 +1,24 @@
 
-<p align="center"><img src="./.github/front_blinker.png" alt="Blinker tab of the front-end application" width="85%"></p>
+<a href="https://youtu.be/Ou1GtHqjWwc"><p align="center"><img src="./.github/ESP32-WebApp.gif" alt="Demo of the application" width="85%"></p></a>
+[**See full video demonstration here**](https://youtu.be/Ou1GtHqjWwc)
 
-# HTTP Restful API Server Example
+# ESP32 Web Application Example: ESP-IDF RESTful & Vue 2 Frontend
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+This repository is a refresher of the [ESP-IDF example](https://github.com/espressif/esp-idf/tree/master/examples/protocols/http_server/restful_server) to use Vue 2, and its UI library Vuetify.
+
+It has been tested and developed on an [ESP32-S3 custom board with 8Mb of flash memory](https://github.com/ArthurFDLR/esp32-s3-darlington-array), but any ESP32 with at least 4Mb of memory should handle this application.
+
+- [ESP32 Web Application Example: ESP-IDF RESTful & Vue 2 Frontend](#esp32-web-application-example-esp-idf-restful--vue-2-frontend)
+  - [Overview](#overview)
+    - [About mDNS](#about-mdns)
+    - [About deploy mode](#about-deploy-mode)
+    - [About frontend framework](#about-frontend-framework)
+  - [How to use example](#how-to-use-example)
+    - [Hardware Required](#hardware-required)
+    - [Configure the project](#configure-the-project)
+    - [Build and Flash](#build-and-flash)
+    - [Extra steps to do for deploying website by semihost](#extra-steps-to-do-for-deploying-website-by-semihost)
+  - [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -14,14 +29,14 @@ This example designs several APIs to fetch resources as follows:
 | API                        | Method | Resource Example                                      | Description                                                                              | Page URL |
 | -------------------------- | ------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
 | `/api/v1/system/info`      | `GET`  | {<br />version:"v4.0-dev",<br />cores:2<br />}        | Used for clients to get system information like IDF version, ESP32 cores, etc            | `/`      |
-| `/api/v1/temp/raw`         | `GET`  | {<br />raw:22<br />}                                  | Used for clients to get raw temperature data read from sensor                            | `/chart` |
-| `/api/v1/light/brightness` | `POST` | { <br />red:160,<br />green:160,<br />blue:160<br />} | Used for clients to upload control values to ESP32 in order to control LED’s brightness  | `/light` |
+| `/api/v1/blinker/duration`         | `POST`  | {<br />"duration_ms":1000<br />}                                  | Used for clients to get raw temperature data read from sensor                            | `/blinker` |
+| `/api/v1/blinker/state` | `POST` | { <br /><t />"state":true<br />} | Used for clients to upload control values to ESP32 in order to control LED’s brightness  | `/blinker` |
 
 **Page URL** is the URL of the webpage which will send a request to the API.
 
 ### About mDNS
 
-The IP address of an IoT device may vary from time to time, so it’s impracticable to hard code the IP address in the webpage. In this example, we use the `mDNS` to parse the domain name `esp-home.local`, so that we can alway get access to the web server by this URL no matter what the real IP address behind it. See [here](https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/protocols/mdns.html) for more information about mDNS.
+The IP address of an IoT device may vary from time to time, so it’s impracticable to hard code the IP address in the webpage. By default, we use the `mDNS` to parse the domain name `esp-blinker.local`, so that we can always get access to the web server by this URL no matter what the real IP address behind it. See [here](https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/protocols/mdns.html) for more information about mDNS.
 
 **Notes: mDNS is installed by default on most operating systems or is available as separate package.**
 
@@ -44,7 +59,7 @@ Many famous frontend frameworks (e.g. Vue, React, Angular) can be used in this e
 
 To run this example, you need an ESP32 dev board (e.g. ESP32-WROVER Kit, ESP32-Ethernet-Kit) or ESP32 core board (e.g. ESP32-DevKitC). An extra JTAG adapter might also needed if you choose to deploy the website by semihosting. For more information about supported JTAG adapter, please refer to [select JTAG adapter](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/jtag-debugging/index.html#jtag-debugging-selecting-jtag-adapter). Or if you choose to deploy the website to SD card, an extra SD slot board is needed.
 
-#### Pin Assignment:
+**Pin Assignment:**
 
 Only if you deploy the website to SD card, then the following pin connection is used in this example.
 
@@ -74,6 +89,7 @@ In the `Example Connection Configuration` menu:
 
 In the `Example Configuration` menu:
 
+* Set the pin of the build-in LED (or any pin which has something blinkable connected) in `Blink GPIO number`.
 * Set the domain name in `mDNS Host Name` option.
 * Choose the deploy mode in `Website deploy mode`, currently we support deploy website to host PC, SD card and SPI Nor flash.
   * If we choose to `Deploy website to host (JTAG is needed)`, then we also need to specify the full path of the website in `Host path to mount (e.g. absolute path to web dist directory)`.
@@ -84,7 +100,7 @@ In the `Example Configuration` menu:
 After the webpage design work has been finished, you should compile them by running following commands:
 
 ```bash
-cd path_to_this_example/front/web-demo
+cd ./front/web-blinker
 npm install
 npm run build
 ```
@@ -103,33 +119,6 @@ We need to run the latest version of OpenOCD which should support semihost featu
 
 ```bash
 openocd-esp32/bin/openocd -s openocd-esp32/share/openocd/scripts -f board/esp32-wrover-kit-3.3v.cfg
-```
-
-## Example Output
-
-### Render webpage in browser
-
-In your browser, enter the URL where the website located (e.g. `http://esp-home.local`). You can also enter the IP address that ESP32 obtained if your operating system currently don't have support for mDNS service.
-
-Besides that, this example also enables the NetBIOS feature with the domain name `esp-home`. If your OS supports NetBIOS and has enabled it (e.g. Windows has native support for NetBIOS), then the URL `http://esp-home` should also work.
-
-![esp_home_local](https://dl.espressif.com/dl/esp-idf/docs/_static/esp_home_local.gif)
-
-### ESP monitor output
-
-In the *Light* page, after we set up the light color and click on the check button, the browser will send a post request to ESP32, and in the console, we just print the color value.
-
-```bash
-I (6115) example_connect: Connected to Ethernet
-I (6115) example_connect: IPv4 address: 192.168.2.151
-I (6325) esp-home: Partition size: total: 1920401, used: 1587575
-I (6325) esp-rest: Starting HTTP Server
-I (128305) esp-rest: File sending complete
-I (128565) esp-rest: File sending complete
-I (128855) esp-rest: File sending complete
-I (129525) esp-rest: File sending complete
-I (129855) esp-rest: File sending complete
-I (137485) esp-rest: Light control: red = 50, green = 85, blue = 28
 ```
 
 ## Troubleshooting

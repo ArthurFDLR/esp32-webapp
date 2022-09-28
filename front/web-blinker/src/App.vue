@@ -39,7 +39,7 @@
         height="30px"
         class="d-flex align-center justify-center"
       >
-        <a href="https://arthurfindelair.com" style="text-decoration: none; color: white;">Arthur Findelair 2022</a>
+        <a href="https://arthurfindelair.com" style="text-decoration: none; color: white;"> &#169; Arthur Findelair 2022</a>
       </v-card>
       <!-- <span class="white--text"> Arthur Findelair</span> -->
     </v-footer>
